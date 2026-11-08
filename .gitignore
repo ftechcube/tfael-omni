@@ -1,0 +1,69 @@
+# ── Rahasia / kredensial ──────────────────────────────
+.env
+.env.*
+deploy/omni.env
+backend/cell_api.key
+backend/.secrets*
+*.key
+*.pem
+*.p12
+*.pfx
+id_rsa*
+# CATATAN: ssl_key.pem (private key) & ssl_cert.pem SENGAJA diabaikan.
+# Jangan tambahkan '!backend/ssl_key.pem' — itu akan membocorkan kunci privat.
+
+# ── Database & data operasional ───────────────────────
+*.db
+*.sqlite
+*.sqlite3
+*.db-wal
+*.db-shm
+
+# ── Unggahan & barang bukti pengguna ──────────────────
+frontend/uploads/*
+!frontend/uploads/.gitkeep
+
+# ── Keluaran besar / backup (tidak perlu di repo) ─────
+Claude outputs/
+*.mp4
+*.zip
+
+# ── Artefak Python ────────────────────────────────────
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# ── Sistem ────────────────────────────────────────────
+.DS_Store
+
+# ── Setelan lokal Claude Code (jangan di-commit) ──────
+.claude/settings.local.json
+
+# Bobot model ML (unduh otomatis)
+*.pt
+
+# Ekspor data OpenCellID (unduh lokal, jangan di-commit)
+*.csv.gz
+
+# ── Node.js ───────────────────────────────────────────
+node_modules/
+package-lock.json
+
+# ── Build artifacts ───────────────────────────────────
+dist/
+tfael-omni/dist/
+*.tar.gz
+
+# ── Backup / folder lama ─────────────────────────────
+frontend_old/
+frontend_old_backup/
+
+# ── FUSE temp files (artifact dari mount session) ─────
+.fuse_hidden*
+
+# ── Frontend built assets (rebuild dari tfael-omni/src) ──
+frontend/assets/
+frontend/fonts/
+
+# ── Claude Code config lokal ──────────────────────────
+.claude/

@@ -1,0 +1,149 @@
+/* ===================================================================== */
+/* TFAEL-OMNI  ·  Global Tailwind + Shadcn/ui Styles                     */
+/* Air-gap ready — self-hosted fonts, no CDN calls                       */
+/* ===================================================================== */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── FONTS (self-hosted for air-gap) ─────────────────────────────────── */
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal; font-weight: 400; font-display: swap;
+  src: url("/fonts/jetbrains-mono-latin-400-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal; font-weight: 700; font-display: swap;
+  src: url("/fonts/jetbrains-mono-latin-700-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal; font-weight: 800; font-display: swap;
+  src: url("/fonts/jetbrains-mono-latin-800-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Chivo";
+  font-style: normal; font-weight: 400; font-display: swap;
+  src: url("/fonts/chivo-latin-400-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Chivo";
+  font-style: normal; font-weight: 500; font-display: swap;
+  src: url("/fonts/chivo-latin-500-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Chivo";
+  font-style: normal; font-weight: 600; font-display: swap;
+  src: url("/fonts/chivo-latin-600-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Chivo";
+  font-style: normal; font-weight: 700; font-display: swap;
+  src: url("/fonts/chivo-latin-700-normal.woff2") format("woff2");
+}
+
+/* ── BASE LAYER ──────────────────────────────────────────────────────── */
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans text-sm antialiased;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  #root {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  a { @apply text-primary no-underline; }
+  a:hover { @apply underline; }
+
+  button { @apply cursor-pointer font-sans; }
+}
+
+/* ── SCROLLBAR (tactical thin) ───────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  @apply bg-border rounded-sm;
+}
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-foreground-muted;
+}
+
+/* ── UTILITY LAYER ───────────────────────────────────────────────────── */
+@layer utilities {
+  /* Tactical glow effects */
+  .glow-primary {
+    box-shadow: 0 0 12px rgba(140, 150, 99, 0.25);
+  }
+  .glow-amber {
+    box-shadow: 0 0 12px rgba(242, 169, 59, 0.25);
+  }
+  .glow-destructive {
+    box-shadow: 0 0 12px rgba(217, 87, 61, 0.25);
+  }
+
+  /* Glass overlay for panels */
+  .glass {
+    backdrop-filter: blur(12px) saturate(150%);
+    -webkit-backdrop-filter: blur(12px) saturate(150%);
+  }
+
+  /* Hide scrollbar but keep functionality */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* ── LEAFLET OVERRIDES (must remain global) ─────────────────────────── */
+.tactical-dark {
+  filter: brightness(0.6) invert(1) contrast(1.5) hue-rotate(200deg) saturate(0.3) brightness(0.85);
+}
+
+.tactical-pin {
+  background: none !important;
+  border: none !important;
+}
+
+/* ── RANGE SLIDER (tactical thumb) ──────────────────────────────────── */
+.tactical-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  background: theme('colors.border.dim');
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+.tactical-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #6f93a0;
+  border: none;
+  cursor: pointer;
+}
+.tactical-slider::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #6f93a0;
+  border: none;
+  cursor: pointer;
+}

@@ -1,0 +1,155 @@
+/* ===================================================================== */
+/* TFAEL-OMNI  ·  "Field Instrument" Design Tokens                       */
+/* Air-gap ready — self-hosted fonts, no CDN calls                       */
+/* ===================================================================== */
+
+/* ── FONTS (self-hosted for air-gap) ─────────────────────────────────── */
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal; font-weight: 400; font-display: swap;
+  src: url("/fonts/jetbrains-mono-latin-400-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal; font-weight: 700; font-display: swap;
+  src: url("/fonts/jetbrains-mono-latin-700-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal; font-weight: 800; font-display: swap;
+  src: url("/fonts/jetbrains-mono-latin-800-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Chivo";
+  font-style: normal; font-weight: 400; font-display: swap;
+  src: url("/fonts/chivo-latin-400-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Chivo";
+  font-style: normal; font-weight: 500; font-display: swap;
+  src: url("/fonts/chivo-latin-500-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Chivo";
+  font-style: normal; font-weight: 600; font-display: swap;
+  src: url("/fonts/chivo-latin-600-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Chivo";
+  font-style: normal; font-weight: 700; font-display: swap;
+  src: url("/fonts/chivo-latin-700-normal.woff2") format("woff2");
+}
+
+/* ── CSS CUSTOM PROPERTIES ───────────────────────────────────────────── */
+:root {
+  /* Backgrounds — warm ink tiers */
+  --bg-deep:       #141109;
+  --bg-panel:      #1b1811;
+  --bg-card:       #241f16;
+  --bg-card-hover: #2c2619;
+  --bg-recessed:   #0e0c06;
+  --bg-surface:    rgba(27,24,17,0.92);
+  --bg-btn:        #2a2315;
+  --bg-btn-hover:  #352d1f;
+
+  /* Borders */
+  --border-dim:    #342c1e;
+  --border-cyan:   #5f6744;
+
+  /* Accent palette */
+  --cyan:     #8c9663;    /* structural — olive drab     */
+  --emerald:  #93ad57;    /* ok / 4G — olive green       */
+  --amber:    #f2a93b;    /* action / SMS / fosfor amber  */
+  --crimson:  #d9573d;    /* alarm — warm red             */
+  --purple:   #9d82b4;    /* admin — muted purple         */
+  --steel:    #6f93a0;    /* radio APRS / LoRa            */
+  --gold:     #f2a93b;    /* alias for amber in graphs    */
+
+  /* Text */
+  --text-main:  #ece5d4;
+  --text-muted: #9c927c;
+
+  /* Typography stacks */
+  --font-mono: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+  --font-sans: "Chivo", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+  /* Spacing scale */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+
+  /* Radii */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-pill: 9999px;
+
+  /* Transitions */
+  --ease-fast: 0.18s ease;
+  --ease-med:  0.3s ease;
+}
+
+/* ── RESET ───────────────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg-deep);
+  color: var(--text-main);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+a { color: var(--cyan); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+button { cursor: pointer; font-family: inherit; }
+
+/* ── SCROLLBAR ───────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--border-dim);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+/* ── ANIMATIONS ──────────────────────────────────────────────────────── */
+@keyframes pulseRed {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.35); opacity: 0.55; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
