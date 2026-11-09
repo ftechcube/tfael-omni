@@ -6,7 +6,7 @@ import { fetchOverview } from '@/api/endpoints';
 import { useAuth } from './AuthContext';
 import type { OverviewData } from '@/types/api';
 
-export type WorkspaceId = 'c4isr' | 'osint' | 'siem' | 'dfir' | 'intelligence' | 'admin';
+export type WorkspaceId = 'c4isr' | 'osint' | 'siem' | 'dfir' | 'intelligence' | 'cognitive' | 'admin';
 
 interface AppState {
   workspace: WorkspaceId;

@@ -319,3 +319,67 @@ export function adminAuditLog(params: { limit?: number; category?: string; actor
 export function adminVerifyAuditChain() {
   return apiFetch<ApiResponse>('/api/v2/admin/audit/verify-chain').then(r => r.data);
 }
+
+// ── Cognitive Domain / BotRadar ─────────────────────────────
+export interface CogAccount {
+  account_id: string; platform: string; username: string;
+  display_name: string; bot_score: number; bot_label: string;
+  cluster_id: number; followers: number; following: number;
+  post_count: number; account_age_days: number;
+}
+export interface CogDashboard {
+  ok: boolean;
+  summary: {
+    total_accounts: number; bots: number; suspicious: number;
+    organic: number; bot_ratio: number; network_edges: number;
+  };
+  top_flagged_accounts: CogAccount[];
+  recent_cib_events: any[];
+  top_narratives: any[];
+}
+export interface CogGraphData {
+  ok: boolean;
+  nodes: Array<{
+    id: string; username: string; bot_score: number;
+    bot_label: string; cluster_id: number; degree: number;
+    betweenness: number;
+  }>;
+  edges: Array<{ source: string; target: string; relation: string; weight: number }>;
+  total_nodes: number; total_edges: number; communities: number;
+}
+export function cogScrape(data: { platform: string; query?: string; channel?: string; max_posts?: number }) {
+  return apiPost<ApiResponse & { job_id: string; posts_collected: number; accounts_found: number }>('/api/v2/cognitive/scrape', data).then(r => r.data);
+}
+export function cogBotDetect(data: { job_id?: string; topic?: string } = {}) {
+  return apiPost<ApiResponse & { total_analyzed: number; bots_detected: number; suspicious: number; organic: number; top_bots: any[] }>('/api/v2/cognitive/bot-detect', data).then(r => r.data);
+}
+export function cogBotScore(account_id: string) {
+  return apiPost<ApiResponse & { account_id: string; bot_score: number; bot_label: string; signals: Record<string, any> }>('/api/v2/cognitive/bot-score', { account_id }).then(r => r.data);
+}
+export function cogCibDetect(data: { window_seconds?: number; min_accounts?: number; min_similarity?: number; job_id?: string } = {}) {
+  return apiPost<ApiResponse & { events: any[]; total_events: number }>('/api/v2/cognitive/cib-detect', data).then(r => r.data);
+}
+export function cogAmplification(data: { min_accounts?: number; job_id?: string } = {}) {
+  return apiPost<ApiResponse & { narratives: any[]; total_narratives: number }>('/api/v2/cognitive/amplification', data).then(r => r.data);
+}
+export function cogNetworkGraph(data: { job_id?: string } = {}) {
+  return apiPost<CogGraphData>('/api/v2/cognitive/network-graph', data).then(r => r.data);
+}
+export function cogNarrative(data: { topic: string; job_id?: string }) {
+  return apiPost<ApiResponse & { topic: string; posts_found: number; unique_accounts: number; avg_hoax_score: number; classification: string; spread_velocity_per_hour: number; top_spreaders: any[]; top_hashtags: any[]; hoax_indicators: any[] }>('/api/v2/cognitive/narrative', data).then(r => r.data);
+}
+export function cogSurge(data: { age_threshold_days?: number; min_accounts?: number; job_id?: string } = {}) {
+  return apiPost<ApiResponse & { surge_detected: boolean; total_accounts: number; new_accounts: number; new_account_ratio: number; severity: string; new_account_list: any[] }>('/api/v2/cognitive/surge', data).then(r => r.data);
+}
+export function cogFullPipeline(data: { platform: string; query?: string; channel?: string; max_posts?: number; cib_window_sec?: number; min_cib_accounts?: number }) {
+  return apiPost<ApiResponse & { job_id: string; pipeline_stages: Record<string, any>; summary: any }>('/api/v2/cognitive/full-pipeline', data).then(r => r.data);
+}
+export function cogDashboard(data: { job_id?: string } = {}) {
+  return apiPost<CogDashboard>('/api/v2/cognitive/dashboard', data).then(r => r.data);
+}
+export function cogAccountDetail(account_id: string) {
+  return apiPost<ApiResponse & { account: CogAccount; posts: any[]; connections: any[]; signals: Record<string, any> }>('/api/v2/cognitive/account-detail', { account_id }).then(r => r.data);
+}
+export function cogIngestGraph(data: { job_id?: string } = {}) {
+  return apiPost<ApiResponse & { ingested: { nodes: number; edges: number; alerts: number } }>('/api/v2/cognitive/ingest-graph', data).then(r => r.data);
+}

@@ -21,6 +21,7 @@ const WORKSPACES: WorkspaceTab[] = [
   { id: 'siem',         label: 'SIEM',             icon: 'shield',    perm: 'view_siem' },
   { id: 'dfir',         label: 'DFIR',             icon: 'flask' },
   { id: 'intelligence', label: 'Intel Graph',      icon: 'graph' },
+  { id: 'cognitive',    label: 'BotRadar',          icon: 'bug' },
   { id: 'admin',        label: 'Admin',            icon: 'settings',  perm: 'manage_users' },
 ];
 

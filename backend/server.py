@@ -28,6 +28,7 @@ FRONTEND_DIR = os.path.join(PROJECT_ROOT, "frontend")
 sys.path.insert(0, BACKEND_DIR)
 
 import engine_graph
+import engine_cognitive
 # Daftar origin yang diizinkan untuk CORS. Diambil dari env OMNI_ALLOWED_ORIGINS
 # (dipisah koma). Kosong = tolak semua permintaan lintas-asal (default aman).
 ALLOWED_ORIGINS = [
@@ -1218,6 +1219,160 @@ class TfaelOmniHandler(BaseHTTPRequestHandler):
             self._send_json(result)
             return
 
+        
+        # ──────── Pilar 7: Cognitive Domain / BotRadar ────────
+
+        if path == "/api/v2/cognitive/scrape":
+            if not sess:
+                self._send_json({"ok": False, "error": "Sesi tidak valid."}, status=401); return
+            engine_cognitive.init_cognitive_db()
+            platform = payload.get("platform", "twitter")
+            query = payload.get("query", "").strip()
+            channel = payload.get("channel", "").strip()
+            max_posts = _i(payload, "max_posts", 200)
+            if platform == "twitter" and query:
+                result = engine_cognitive.scrape_twitter_search(query, max_posts=max_posts)
+            elif platform == "telegram" and channel:
+                result = engine_cognitive.scrape_telegram_channel(channel, max_posts=max_posts)
+            else:
+                self._send_json({"ok": False, "error": "platform=twitter+query atau platform=telegram+channel"}, status=400); return
+            admin.log_action(actor, "COGNITIVE", f"Scrape {platform}: {query or channel}",
+                             query or channel, "OK", ip, "")
+            self._send_json(result)
+            return
+
+        if path == "/api/v2/cognitive/bot-detect":
+            if not sess:
+                self._send_json({"ok": False, "error": "Sesi tidak valid."}, status=401); return
+            engine_cognitive.init_cognitive_db()
+            job_id = payload.get("job_id", "").strip() or None
+            topic = payload.get("topic", "").strip() or None
+            result = engine_cognitive.run_bot_detection_batch(job_id=job_id, topic=topic)
+            admin.log_action(actor, "COGNITIVE", f"Bot detection batch (job={job_id})",
+                             job_id or "ALL", "OK", ip, "")
+            self._send_json(result)
+            return
+
+        if path == "/api/v2/cognitive/bot-score":
+            if not sess:
+                self._send_json({"ok": False, "error": "Sesi tidak valid."}, status=401); return
+            account_id = payload.get("account_id", "").strip()
+            if not account_id:
+                self._send_json({"ok": False, "error": "Parameter account_id diperlukan"}, status=400); return
+            result = engine_cognitive.compute_bot_score(account_id)
+            self._send_json(result)
+            return
+
+        if path == "/api/v2/cognitive/cib-detect":
+            if not sess:
+                self._send_json({"ok": False, "error": "Sesi tidak valid."}, status=401); return
+            engine_cognitive.init_cognitive_db()
+            window = _i(payload, "window_seconds", 60)
+            min_acct = _i(payload, "min_accounts", 3)
+            min_sim = _f(payload, "min_similarity", 0.3)
+            job_id = payload.get("job_id", "").strip() or None
+            result = engine_cognitive.detect_coordinated_posting(
+                window_seconds=window, min_accounts=min_acct,
+                min_similarity=min_sim, job_id=job_id)
+            admin.log_action(actor, "COGNITIVE", f"CIB detection (window={window}s)",
+                             job_id or "ALL", "OK", ip, "")
+            self._send_json(result)
+            return
+
+        if path == "/api/v2/cognitive/amplification":
+            if not sess:
+                self._send_json({"ok": False, "error": "Sesi tidak valid."}, status=401); return
+            engine_cognitive.init_cognitive_db()
+            min_acct = _i(payload, "min_accounts", 3)
+            job_id = payload.get("job_id", "").strip() or None
+            result = engine_cognitive.detect_hashtag_amplification(min_accounts=min_acct, job_id=job_id)
+            self._send_json(result)
+            return
+
+        if path == "/api/v2/cognitive/network-graph":
+            if not sess:
+                self._send_json({"ok": False, "error": "Sesi tidak valid."}, status=401); return
+            engine_cognitive.init_cognitive_db()
+            job_id = payload.get("job_id", "").strip() or None
+            result = engine_cognitive.build_interaction_graph(job_id=job_id)
+            admin.log_action(actor, "COGNITIVE", "Network graph analysis",
+                             job_id or "ALL", "OK", ip, "")
+            self._send_json(result)
+            return
+
+        if path == "/api/v2/cognitive/narrative":
+            if not sess:
+                self._send_json({"ok": False, "error": "Sesi tidak valid."}, status=401); return
+            engine_cognitive.init_cognitive_db()
+            topic = payload.get("topic", "").strip()
+            job_id = payload.get("job_id", "").strip() or None
+            if not topic:
+                self._send_json({"ok": False, "error": "Parameter topic diperlukan"}, status=400); return
+            result = engine_cognitive.analyze_narrative(topic, job_id=job_id)
+            self._send_json(result)
+            return
+
+        if path == "/api/v2/cognitive/surge":
+            if not sess:
+                self._send_json({"ok": False, "error": "Sesi tidak valid."}, status=401); return
+            engine_cognitive.init_cognitive_db()
+            age = _i(payload, "age_threshold_days", 30)
+            min_a = _i(payload, "min_accounts", 5)
+            job_id = payload.get("job_id", "").strip() or None
+            result = engine_cognitive.detect_new_account_surge(
+                age_threshold_days=age, min_accounts=min_a, job_id=job_id)
+            self._send_json(result)
+            return
+
+        if path == "/api/v2/cognitive/full-pipeline":
+            if not sess:
+                self._send_json({"ok": False, "error": "Sesi tidak valid."}, status=401); return
+            engine_cognitive.init_cognitive_db()
+            result = engine_cognitive.run_full_cognitive_analysis(
+                platform=payload.get("platform", "twitter"),
+                query=payload.get("query", ""),
+                channel=payload.get("channel", ""),
+                max_posts=_i(payload, "max_posts", 200),
+                cib_window_sec=_i(payload, "cib_window_sec", 60),
+                min_cib_accounts=_i(payload, "min_cib_accounts", 3),
+            )
+            admin.log_action(actor, "COGNITIVE", "Full cognitive pipeline",
+                             payload.get("query", "") or payload.get("channel", ""), "OK", ip, "")
+            self._send_json(result)
+            return
+
+        if path == "/api/v2/cognitive/dashboard":
+            if not sess:
+                self._send_json({"ok": False, "error": "Sesi tidak valid."}, status=401); return
+            engine_cognitive.init_cognitive_db()
+            job_id = payload.get("job_id", "").strip() or None
+            result = engine_cognitive.get_cognitive_dashboard(job_id=job_id)
+            self._send_json(result)
+            return
+
+        if path == "/api/v2/cognitive/account-detail":
+            if not sess:
+                self._send_json({"ok": False, "error": "Sesi tidak valid."}, status=401); return
+            engine_cognitive.init_cognitive_db()
+            account_id = payload.get("account_id", "").strip()
+            if not account_id:
+                self._send_json({"ok": False, "error": "Parameter account_id diperlukan"}, status=400); return
+            result = engine_cognitive.get_account_detail(account_id)
+            self._send_json(result)
+            return
+
+        if path == "/api/v2/cognitive/ingest-graph":
+            if not sess:
+                self._send_json({"ok": False, "error": "Sesi tidak valid."}, status=401); return
+            engine_cognitive.init_cognitive_db()
+            job_id = payload.get("job_id", "").strip() or None
+            result = engine_cognitive.ingest_cognitive_to_graph(job_id=job_id)
+            admin.log_action(actor, "COGNITIVE", "Ingest to knowledge graph",
+                             job_id or "ALL", "OK", ip, "")
+            self._send_json(result)
+            return
+
+
         self._send_json({"ok": False, "error": f"Unknown endpoint {path}"}, status=404)
 
 
@@ -1239,6 +1394,7 @@ def ensure_self_signed_cert():
 
 def run_server(port: int = 8080):
     init_db()
+    engine_cognitive.init_cognitive_db()
     # Jalur B: isi target dari recon NYATA atas indikator aman (thread latar, non-blok).
     seed_targets_from_recon_async()
     # Impor menara OpenCellID otomatis bila belum ada (thread latar, non-blok).

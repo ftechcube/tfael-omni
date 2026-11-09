@@ -18,6 +18,7 @@ const OsintWorkspace        = lazy(() => import('@/workspaces/OsintWorkspace'));
 const SiemWorkspace         = lazy(() => import('@/workspaces/SiemWorkspace'));
 const DfirWorkspace         = lazy(() => import('@/workspaces/DfirWorkspace'));
 const IntelligenceWorkspace = lazy(() => import('@/workspaces/IntelligenceWorkspace'));
+const CognitiveWorkspace    = lazy(() => import('@/workspaces/CognitiveWorkspace'));
 const AdminWorkspace        = lazy(() => import('@/workspaces/AdminWorkspace'));
 
 function WorkspaceLoader() {
@@ -39,6 +40,7 @@ function WorkspaceRouter() {
       {workspace === 'siem'         && <SiemWorkspace />}
       {workspace === 'dfir'         && <DfirWorkspace />}
       {workspace === 'intelligence' && <IntelligenceWorkspace />}
+      {workspace === 'cognitive'    && <CognitiveWorkspace />}
       {workspace === 'admin'        && <AdminWorkspace />}
     </Suspense>
   );
