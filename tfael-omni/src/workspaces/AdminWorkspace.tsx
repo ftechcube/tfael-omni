@@ -6,7 +6,7 @@
 import { useState } from 'react';
 import { SubTabs } from '@/components/ui/Tabs/Tabs';
 import { UserManagement } from '@/components/admin/UserManagement/UserManagement';
-import { RbacMatrix } from '@/components/admin/RbacMatrix/RbacMatrix';
+import { RbacMatrix } from '@/components/admin/RBACMatrix/RbacMatrix';
 import { AuditLog } from '@/components/admin/AuditLog/AuditLog';
 
 type AdminTab = 'users' | 'rbac' | 'audit';
