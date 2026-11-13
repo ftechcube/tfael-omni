@@ -15,11 +15,11 @@ const CLUSTER_COLORS = [
 ];
 
 const LABEL_COLORS: Record<string, string> = {
-  BOT_HIGH: '#ef4444',
-  BOT_MEDIUM: '#f97316',
+  BOT_CONFIRMED: '#ef4444',
+  BOT_PROBABLE: '#f97316',
   SUSPICIOUS: '#eab308',
-  LIKELY_ORGANIC: '#22c55e',
-  UNKNOWN: '#64748b',
+  UNCONFIRMED: '#22d3ee',
+  LOW_SIGNAL: '#22c55e',
   CHANNEL: '#3b82f6',
 };
 

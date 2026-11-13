@@ -324,14 +324,14 @@ export function adminVerifyAuditChain() {
 export interface CogAccount {
   account_id: string; platform: string; username: string;
   display_name: string; bot_score: number; bot_label: string;
-  cluster_id: number; followers: number; following: number;
+  bot_confidence?: number; cluster_id: number; followers: number; following: number;
   post_count: number; account_age_days: number;
 }
 export interface CogDashboard {
   ok: boolean;
   summary: {
     total_accounts: number; bots: number; suspicious: number;
-    organic: number; bot_ratio: number; network_edges: number;
+    low_signal: number; bot_ratio: number; network_edges: number;
   };
   top_flagged_accounts: CogAccount[];
   recent_cib_events: any[];
@@ -351,7 +351,7 @@ export function cogScrape(data: { platform: string; query?: string; channel?: st
   return apiPost<ApiResponse & { job_id: string; posts_collected: number; accounts_found: number }>('/api/v2/cognitive/scrape', data).then(r => r.data);
 }
 export function cogBotDetect(data: { job_id?: string; topic?: string } = {}) {
-  return apiPost<ApiResponse & { total_analyzed: number; bots_detected: number; suspicious: number; organic: number; top_bots: any[] }>('/api/v2/cognitive/bot-detect', data).then(r => r.data);
+  return apiPost<ApiResponse & { total_analyzed: number; bots_detected: number; suspicious: number; low_signal: number; top_bots: any[] }>('/api/v2/cognitive/bot-detect', data).then(r => r.data);
 }
 export function cogBotScore(account_id: string) {
   return apiPost<ApiResponse & { account_id: string; bot_score: number; bot_label: string; signals: Record<string, any> }>('/api/v2/cognitive/bot-score', { account_id }).then(r => r.data);
@@ -373,6 +373,9 @@ export function cogSurge(data: { age_threshold_days?: number; min_accounts?: num
 }
 export function cogFullPipeline(data: { platform: string; query?: string; channel?: string; max_posts?: number; cib_window_sec?: number; min_cib_accounts?: number }) {
   return apiPost<ApiResponse & { job_id: string; pipeline_stages: Record<string, any>; summary: any }>('/api/v2/cognitive/full-pipeline', data).then(r => r.data);
+}
+export function cogSeedDemo(data: { force?: boolean } = {}) {
+  return apiPost<ApiResponse & { seeded: boolean; accounts?: number; posts?: number; job_id?: string }>('/api/v2/cognitive/seed-demo', data).then(r => r.data);
 }
 export function cogDashboard(data: { job_id?: string } = {}) {
   return apiPost<CogDashboard>('/api/v2/cognitive/dashboard', data).then(r => r.data);

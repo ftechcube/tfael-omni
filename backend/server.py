@@ -1324,6 +1324,21 @@ class TfaelOmniHandler(BaseHTTPRequestHandler):
             self._send_json(result)
             return
 
+        if path == "/api/v2/cognitive/seed-demo":
+            if not sess:
+                self._send_json({"ok": False, "error": "Sesi tidak valid."}, status=401); return
+            engine_cognitive.init_cognitive_db()
+            force = payload.get("force", False)
+            if force:
+                conn = engine_cognitive.get_db()
+                for tbl in ("cog_accounts", "cog_posts", "cog_coordinated_events", "cog_narratives", "cog_networks", "cog_scrape_jobs"):
+                    conn.execute(f"DELETE FROM {tbl}")
+                conn.commit()
+                conn.close()
+            result = engine_cognitive.seed_cognitive_demo()
+            self._send_json(result)
+            return
+
         if path == "/api/v2/cognitive/full-pipeline":
             if not sess:
                 self._send_json({"ok": False, "error": "Sesi tidak valid."}, status=401); return
@@ -1395,6 +1410,11 @@ def ensure_self_signed_cert():
 def run_server(port: int = 8080):
     init_db()
     engine_cognitive.init_cognitive_db()
+    # Auto-seed BotRadar demo data kalau tabel kosong (scraping sering gagal tanpa API)
+    try:
+        engine_cognitive.seed_cognitive_demo()
+    except Exception as e:
+        sys.stderr.write(f"[COGNITIVE] Demo seed skipped: {e}\n")
     # Jalur B: isi target dari recon NYATA atas indikator aman (thread latar, non-blok).
     seed_targets_from_recon_async()
     # Impor menara OpenCellID otomatis bila belum ada (thread latar, non-blok).

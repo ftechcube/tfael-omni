@@ -11,33 +11,33 @@ import { Icon } from '@/components/icons/Icon';
 import { cn } from '@/lib/utils';
 
 const LABEL_STYLES: Record<string, string> = {
-  BOT_HIGH:       'bg-red-900/40 text-red-400 border-red-700/50',
-  BOT_MEDIUM:     'bg-orange-900/40 text-orange-400 border-orange-700/50',
+  BOT_CONFIRMED:  'bg-red-900/40 text-red-400 border-red-700/50',
+  BOT_PROBABLE:   'bg-orange-900/40 text-orange-400 border-orange-700/50',
   SUSPICIOUS:     'bg-yellow-900/40 text-yellow-400 border-yellow-700/50',
-  LIKELY_ORGANIC: 'bg-green-900/40 text-green-400 border-green-700/50',
-  UNKNOWN:        'bg-zinc-800/40 text-zinc-400 border-zinc-600/50',
-  PENDING:        'bg-zinc-800/40 text-zinc-400 border-zinc-600/50',
+  UNCONFIRMED:    'bg-cyan-900/40 text-cyan-400 border-cyan-700/50',
+  LOW_SIGNAL:     'bg-green-900/40 text-green-400 border-green-700/50',
   CHANNEL:        'bg-blue-900/40 text-blue-400 border-blue-700/50',
 };
 
 const NODE_COLORS: Record<string, string> = {
-  BOT_HIGH:       '#ef4444',
-  BOT_MEDIUM:     '#f97316',
+  BOT_CONFIRMED:  '#ef4444',
+  BOT_PROBABLE:   '#f97316',
   SUSPICIOUS:     '#eab308',
-  LIKELY_ORGANIC: '#3b82f6',
-  UNKNOWN:        '#64748b',
+  UNCONFIRMED:    '#22d3ee',
+  LOW_SIGNAL:     '#22c55e',
   CHANNEL:        '#06b6d4',
 };
 
 const SIGNAL_LABELS: Record<string, string> = {
-  time_entropy:         'Entropi Waktu',
-  text_similarity:      'Kemiripan Teks',
-  ff_ratio_anomaly:     'Rasio FF Anomali',
-  posting_regularity:   'Regularitas Posting',
-  burst_posting:        'Burst Posting',
-  username_entropy:     'Entropi Username',
-  default_profile:      'Profil Default',
-  age_activity_anomaly: 'Anomali Usia/Aktivitas',
+  time_entropy:            'Entropi Waktu',
+  text_similarity_minhash: 'Kemiripan Teks (MinHash)',
+  content_hash_duplicates: 'Duplikat Konten',
+  ff_ratio:                'Rasio FF Anomali',
+  posting_regularity:      'Regularitas Posting',
+  burst_posting:           'Burst Posting',
+  username:                'Pola Username',
+  profile_completeness:    'Kelengkapan Profil',
+  age_activity_anomaly:    'Anomali Usia/Aktivitas',
 };
 
 // ── DEMO DATA — fallback when backend is offline ─────────────────────
@@ -56,7 +56,7 @@ function generateDemoData(): { dashboard: CogDashboard; graph: CogGraphData } {
     ...botNames.map((u, i) => ({
       account_id: `BOT-${i}`, platform: 'twitter', username: u,
       display_name: u.replace(/_/g, ' '), bot_score: 70 + Math.random() * 28,
-      bot_label: Math.random() > 0.4 ? 'BOT_HIGH' : 'BOT_MEDIUM',
+      bot_label: Math.random() > 0.4 ? 'BOT_CONFIRMED' : 'BOT_PROBABLE',
       cluster_id: i % 3, followers: Math.floor(Math.random() * 50),
       following: Math.floor(Math.random() * 2000 + 500),
       post_count: Math.floor(Math.random() * 5000 + 1000),
@@ -65,7 +65,7 @@ function generateDemoData(): { dashboard: CogDashboard; graph: CogGraphData } {
     ...organicNames.map((u, i) => ({
       account_id: `ORG-${i}`, platform: 'twitter', username: u,
       display_name: u.replace(/_/g, ' '), bot_score: Math.random() * 35,
-      bot_label: 'LIKELY_ORGANIC', cluster_id: 3 + (i % 2),
+      bot_label: 'LOW_SIGNAL', cluster_id: 3 + (i % 2),
       followers: Math.floor(Math.random() * 2000 + 100),
       following: Math.floor(Math.random() * 500 + 50),
       post_count: Math.floor(Math.random() * 500 + 10),
@@ -75,9 +75,9 @@ function generateDemoData(): { dashboard: CogDashboard; graph: CogGraphData } {
 
   accounts.sort((a, b) => b.bot_score - a.bot_score);
 
-  const botCount = accounts.filter(a => a.bot_score >= 60).length;
-  const susCount = accounts.filter(a => a.bot_score >= 40 && a.bot_score < 60).length;
-  const orgCount = accounts.filter(a => a.bot_score < 40).length;
+  const botCount = accounts.filter(a => a.bot_score >= 55).length;
+  const susCount = accounts.filter(a => a.bot_score >= 35 && a.bot_score < 55).length;
+  const orgCount = accounts.filter(a => a.bot_score < 35).length;
 
   // graph nodes + edges
   const nodes = accounts.map(a => ({
@@ -110,7 +110,7 @@ function generateDemoData(): { dashboard: CogDashboard; graph: CogGraphData } {
       ok: true,
       summary: {
         total_accounts: accounts.length,
-        bots: botCount, suspicious: susCount, organic: orgCount,
+        bots: botCount, suspicious: susCount, low_signal: orgCount,
         bot_ratio: botCount / accounts.length,
         network_edges: edges.length,
       },
@@ -151,7 +151,7 @@ function generateDemoData(): { dashboard: CogDashboard; graph: CogGraphData } {
 function generateDemoAccountDetail(accountId: string, accounts: CogAccount[]) {
   const acct = accounts.find(a => a.account_id === accountId);
   if (!acct) return null;
-  const isBot = acct.bot_score >= 60;
+  const isBot = acct.bot_score >= 55;
   return {
     ok: true,
     account: acct,
@@ -164,12 +164,14 @@ function generateDemoAccountDetail(accountId: string, accounts: CogAccount[]) {
     })),
     connections: [],
     signals: {
-      time_entropy:       { raw: isBot ? 0.85 : 0.2, normalized: isBot ? 0.85 : 0.2 },
-      text_similarity:    { raw: isBot ? 0.92 : 0.15, normalized: isBot ? 0.92 : 0.15 },
-      ff_ratio_anomaly:   { raw: isBot ? 0.78 : 0.1, normalized: isBot ? 0.78 : 0.1 },
-      posting_regularity: { raw: isBot ? 0.88 : 0.25, normalized: isBot ? 0.88 : 0.25 },
-      burst_posting:      { raw: isBot ? 0.95 : 0.05, normalized: isBot ? 0.95 : 0.05 },
-      username_entropy:   { raw: isBot ? 0.7 : 0.3, normalized: isBot ? 0.7 : 0.3 },
+      time_entropy:            { raw: isBot ? 0.85 : 0.2, normalized: isBot ? 0.85 : 0.2 },
+      text_similarity_minhash: { raw: isBot ? 0.92 : 0.15, normalized: isBot ? 0.92 : 0.15 },
+      content_hash_duplicates: { raw: isBot ? 0.80 : 0.05, normalized: isBot ? 0.80 : 0.05 },
+      ff_ratio:                { raw: isBot ? 0.78 : 0.1, normalized: isBot ? 0.78 : 0.1 },
+      posting_regularity:      { raw: isBot ? 0.88 : 0.25, normalized: isBot ? 0.88 : 0.25 },
+      burst_posting:           { raw: isBot ? 0.95 : 0.05, normalized: isBot ? 0.95 : 0.05 },
+      username:                { raw: isBot ? 0.7 : 0.3, normalized: isBot ? 0.7 : 0.3 },
+      profile_completeness:    { raw: isBot ? 0.65 : 0.1, normalized: isBot ? 0.65 : 0.1 },
     },
   };
 }
@@ -247,7 +249,7 @@ export function BotRadar({ jobId }: Props) {
     const s = dashboard.summary;
     if (s.bots > 0) {
       const newAccts = dashboard.top_flagged_accounts.filter(
-        a => a.account_age_days < 30 && a.bot_score >= 60
+        a => a.account_age_days < 30 && a.bot_score >= 55
       );
       if (newAccts.length >= 3) p.push('akun baru');
     }
@@ -310,7 +312,7 @@ export function BotRadar({ jobId }: Props) {
         <StatCard label="Total Akun" value={s.total_accounts} icon="user" />
         <StatCard label="Bot Terdeteksi" value={s.bots} icon="bug" color="text-red-400" />
         <StatCard label="Mencurigakan" value={s.suspicious} icon="alert" color="text-yellow-400" />
-        <StatCard label="Organik" value={s.organic} icon="check" color="text-green-400" />
+        <StatCard label="Low Signal" value={s.low_signal} icon="check" color="text-green-400" />
         <StatCard label="Rasio Bot" value={`${(s.bot_ratio * 100).toFixed(1)}%`} icon="chart" color="text-orange-400" />
         <StatCard label="Jaringan" value={`${s.network_edges} edge`} icon="graph" color="text-blue-400" />
       </div>
@@ -361,7 +363,6 @@ export function BotRadar({ jobId }: Props) {
                 {graphData.nodes.map(node => {
                   const pos = nodePositions.get(node.id);
                   if (!pos) return null;
-                  const isBot = node.bot_score >= 60;
                   const r = Math.max(3.5, Math.min(9, node.degree * 1.2 + 2.5));
                   const color = NODE_COLORS[node.bot_label] || '#64748b';
                   const isHovered = hoveredNode === node.id;
@@ -398,12 +399,20 @@ export function BotRadar({ jobId }: Props) {
             {/* Legend overlay */}
             <div className="absolute bottom-2 left-2 bg-background-deep/80 backdrop-blur-sm rounded-sm p-1.5 space-y-0.5">
               <div className="flex items-center gap-1.5">
-                <div className="w-2 h-2 rounded-full bg-red-500" />
-                <span className="text-[8px] font-mono text-foreground-muted">Akun bot</span>
+                <div className="w-2 h-2 rounded-full" style={{ background: NODE_COLORS.BOT_CONFIRMED }} />
+                <span className="text-[8px] font-mono text-foreground-muted">Bot confirmed</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <div className="w-2 h-2 rounded-full bg-blue-500" />
-                <span className="text-[8px] font-mono text-foreground-muted">Akun organik</span>
+                <div className="w-2 h-2 rounded-full" style={{ background: NODE_COLORS.BOT_PROBABLE }} />
+                <span className="text-[8px] font-mono text-foreground-muted">Bot probable</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-2 h-2 rounded-full" style={{ background: NODE_COLORS.SUSPICIOUS }} />
+                <span className="text-[8px] font-mono text-foreground-muted">Mencurigakan</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-2 h-2 rounded-full" style={{ background: NODE_COLORS.LOW_SIGNAL }} />
+                <span className="text-[8px] font-mono text-foreground-muted">Low signal</span>
               </div>
             </div>
 
@@ -419,7 +428,7 @@ export function BotRadar({ jobId }: Props) {
                 >
                   <div className="text-foreground font-bold">@{n.username}</div>
                   <div className="text-foreground-muted">
-                    Score: <span className={n.bot_score >= 60 ? 'text-red-400' : 'text-green-400'}>{n.bot_score.toFixed(0)}%</span>
+                    Score: <span className={n.bot_score >= 55 ? 'text-red-400' : 'text-green-400'}>{n.bot_score.toFixed(0)}%</span>
                   </div>
                 </div>
               );
@@ -484,7 +493,7 @@ export function BotRadar({ jobId }: Props) {
                         <BotScoreBar score={a.bot_score} />
                       </td>
                       <td className="px-2 py-1.5">
-                        <span className={cn('px-1.5 py-0.5 rounded text-[10px] font-bold border', LABEL_STYLES[a.bot_label] || LABEL_STYLES.UNKNOWN)}>
+                        <span className={cn('px-1.5 py-0.5 rounded text-[10px] font-bold border', LABEL_STYLES[a.bot_label] || 'bg-background-deep text-foreground-muted border-border-dim')}>
                           {a.bot_label}
                         </span>
                       </td>
@@ -523,6 +532,11 @@ export function BotRadar({ jobId }: Props) {
                       <span className="text-foreground-muted">Bot Score:</span>
                       <BotScoreBar score={accountDetail.account?.bot_score || 0} />
                     </div>
+                    {accountDetail.account?.bot_confidence != null && (
+                      <div className="text-foreground-muted text-[10px]">
+                        Confidence: <span className="text-foreground">{(accountDetail.account.bot_confidence * 100).toFixed(0)}%</span>
+                      </div>
+                    )}
                     {accountDetail.account?.account_age_days != null && (
                       <div className="text-foreground-muted text-[10px]">
                         Usia akun: <span className={accountDetail.account.account_age_days < 30 ? 'text-red-400' : 'text-foreground'}>
@@ -600,8 +614,8 @@ function StatCard({ label, value, icon, color }: {
 }
 
 function BotScoreBar({ score }: { score: number }) {
-  const color = score >= 80 ? 'bg-red-500' : score >= 60 ? 'bg-orange-500' : score >= 40 ? 'bg-yellow-500' : 'bg-green-500';
-  const textColor = score >= 80 ? 'text-red-400' : score >= 60 ? 'text-orange-400' : score >= 40 ? 'text-yellow-400' : 'text-green-400';
+  const color = score >= 75 ? 'bg-red-500' : score >= 55 ? 'bg-orange-500' : score >= 35 ? 'bg-yellow-500' : 'bg-green-500';
+  const textColor = score >= 75 ? 'text-red-400' : score >= 55 ? 'text-orange-400' : score >= 35 ? 'text-yellow-400' : 'text-green-400';
   return (
     <div className="flex items-center gap-1.5">
       <div className="w-16 h-1.5 bg-background-deep rounded-full overflow-hidden">

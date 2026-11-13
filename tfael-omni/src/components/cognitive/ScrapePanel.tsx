@@ -4,7 +4,7 @@
 // ═══════════════════════════════════════════════════════════════════════
 
 import { useState } from 'react';
-import { cogScrape, cogFullPipeline } from '@/api/endpoints';
+import { cogScrape, cogFullPipeline, cogSeedDemo } from '@/api/endpoints';
 import { Icon } from '@/components/icons/Icon';
 import { cn } from '@/lib/utils';
 
@@ -192,6 +192,48 @@ export function ScrapePanel({ onJobComplete }: Props) {
                 {error}
               </div>
             )}
+
+            {/* Demo Data — fallback when scraping sources are dead */}
+            <div className="border-t border-border-dim pt-3 mt-1">
+              <div className="text-[10px] font-mono text-foreground-muted mb-1.5 uppercase tracking-wider">
+                Atau gunakan data demo
+              </div>
+              <button
+                className={cn(
+                  'w-full flex items-center justify-center gap-2 px-3 py-1.5 rounded-sm font-mono text-[10px] border transition-colors',
+                  running
+                    ? 'bg-background-deep text-foreground-muted cursor-not-allowed border-border-dim'
+                    : 'bg-cyan-900/20 border-cyan-700/30 text-cyan-400 hover:bg-cyan-900/40'
+                )}
+                disabled={running}
+                onClick={async () => {
+                  setRunning(true);
+                  setError('');
+                  setResult(null);
+                  try {
+                    const res = await cogSeedDemo({ force: true });
+                    if (res?.ok && res?.seeded) {
+                      setResult({
+                        ok: true,
+                        job_id: res.job_id,
+                        summary: { accounts: res.accounts, posts: res.posts, mode: 'demo_seed' },
+                      });
+                      onJobComplete?.(res.job_id || 'demo');
+                    } else if (res?.ok && !res?.seeded) {
+                      setError(res?.reason || 'Demo data sudah ada. Gunakan force=true.');
+                    } else {
+                      setError(res?.error || 'Gagal load demo data.');
+                    }
+                  } catch (e: any) {
+                    setError(e.message || 'Network error.');
+                  }
+                  setRunning(false);
+                }}
+              >
+                <Icon name="database" size={12} />
+                Load Demo Data (Bot + CIB + Narrative)
+              </button>
+            </div>
           </div>
         </div>
 
