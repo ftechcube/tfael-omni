@@ -628,6 +628,8 @@ def _twitter_api_v2_search(query: str, max_results: int = 100) -> List[Dict[str,
 
 
 _TWITTER_APP_BEARER = "AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA"
+# GraphQL SearchTimeline query id (matches the curl path used in scrape_twitter_search)
+_TWITTER_GQL_QUERY_ID = "vLHjqbDv7TPFMBkIIO1nOA"
 
 _TWITTER_GQL_FEATURES = json.dumps({
     "rweb_video_screen_enabled": False,
@@ -857,6 +859,104 @@ def _parse_gql_tweet_entry(entry: dict) -> Optional[Dict[str, Any]]:
         }
     except Exception:
         return None
+
+
+def test_twitter_cookie() -> Dict[str, Any]:
+    """Quick health-check for the Twitter session cookies in the environment.
+    Makes ONE lightweight authenticated GraphQL request and classifies the result
+    so the operator knows whether cookies are valid, expired, or blocked."""
+    auth = os.environ.get("OMNI_TWITTER_AUTH_TOKEN", "").strip()
+    ct0 = os.environ.get("OMNI_TWITTER_CT0", "").strip()
+    cf = os.environ.get("OMNI_TWITTER_CF_CLEARANCE", "").strip()
+
+    if not auth or not ct0:
+        return {
+            "ok": False, "status": "NO_COOKIE",
+            "detail": "OMNI_TWITTER_AUTH_TOKEN / OMNI_TWITTER_CT0 belum di-set di .env.",
+        }
+
+    features = json.dumps({
+        "responsive_web_graphql_timeline_navigation_enabled": True,
+        "responsive_web_graphql_exclude_directive_enabled": True,
+        "verified_phone_label_enabled": False,
+        "creator_subscriptions_tweet_preview_api_enabled": True,
+        "responsive_web_graphql_skip_user_profile_image_extensions_enabled": False,
+        "c9s_tweet_anatomy_moderator_badge_enabled": True,
+        "tweetypie_unmention_optimization_enabled": True,
+        "responsive_web_edit_tweet_api_enabled": True,
+        "graphql_is_translatable_rweb_tweet_is_translatable_enabled": True,
+        "view_counts_everywhere_api_enabled": True,
+        "longform_notetweets_consumption_enabled": True,
+        "responsive_web_twitter_article_tweet_consumption_enabled": True,
+        "tweet_awards_web_tipping_enabled": False,
+        "freedom_of_speech_not_reach_fetch_enabled": True,
+        "standardized_nudges_misinfo": True,
+        "tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled": True,
+        "longform_notetweets_rich_text_read_enabled": True,
+        "longform_notetweets_inline_media_enabled": True,
+        "responsive_web_enhance_cards_enabled": False,
+    }, separators=(",", ":"))
+    variables = json.dumps({
+        "rawQuery": "news", "count": 1, "querySource": "typed_query", "product": "Top",
+    }, separators=(",", ":"))
+    url = (f"https://x.com/i/api/graphql/{_TWITTER_GQL_QUERY_ID}/SearchTimeline"
+           f"?variables={urllib.parse.quote(variables)}&features={urllib.parse.quote(features)}")
+
+    cookie_str = f"auth_token={auth}; ct0={ct0}"
+    if cf:
+        cookie_str += f"; cf_clearance={cf}"
+
+    req = urllib.request.Request(url, headers={
+        "Authorization": f"Bearer {_TWITTER_APP_BEARER.replace('%3D', '=')}",
+        "x-csrf-token": ct0,
+        "x-twitter-active-user": "yes",
+        "x-twitter-auth-type": "OAuth2Session",
+        "x-twitter-client-language": "en",
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+        "Referer": "https://x.com/search?q=news&src=typed_query",
+        "Cookie": cookie_str,
+    })
+
+    try:
+        resp = urllib.request.urlopen(req, timeout=15)
+        body = resp.read().decode("utf-8", "replace")
+    except urllib.error.HTTPError as e:
+        body = ""
+        try:
+            body = e.read().decode("utf-8", "replace")
+        except Exception:
+            pass
+        if e.code == 401 or '"code":32' in body or "Could not authenticate" in body:
+            return {"ok": False, "status": "EXPIRED",
+                    "detail": "Cookie ditolak Twitter (code 32). Ambil auth_token + ct0 baru dari browser x.com yang masih login."}
+        if e.code == 429:
+            return {"ok": False, "status": "RATE_LIMITED",
+                    "detail": "Kena rate limit. Tunggu beberapa menit lalu coba lagi."}
+        if e.code == 403:
+            return {"ok": False, "status": "BLOCKED",
+                    "detail": f"Ditolak (HTTP 403). cf_clearance mungkin kedaluwarsa. {body[:120]}"}
+        return {"ok": False, "status": "ERROR", "detail": f"HTTP {e.code}: {body[:160]}"}
+    except Exception as e:
+        return {"ok": False, "status": "ERROR", "detail": f"Koneksi gagal: {e}"}
+
+    if not body.strip():
+        return {"ok": False, "status": "BLOCKED",
+                "detail": "Respons kosong — kemungkinan diblok di layer TLS/Cloudflare."}
+    if '"code":32' in body or "Could not authenticate" in body:
+        return {"ok": False, "status": "EXPIRED",
+                "detail": "Cookie ditolak Twitter (code 32). Ambil auth_token + ct0 baru dari browser x.com yang masih login."}
+    try:
+        data = json.loads(body)
+    except Exception:
+        return {"ok": False, "status": "ERROR", "detail": f"Respons bukan JSON: {body[:120]}"}
+
+    if data.get("errors"):
+        msg = data["errors"][0].get("message", "unknown")
+        return {"ok": False, "status": "ERROR", "detail": f"Twitter error: {msg}"}
+    if "data" in data:
+        return {"ok": True, "status": "VALID",
+                "detail": "Cookie valid — scrape Twitter siap dipakai."}
+    return {"ok": False, "status": "ERROR", "detail": "Respons tak dikenali dari Twitter."}
 
 
 def _parse_timestamp_robust(raw: str) -> Tuple[int, str]:

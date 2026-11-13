@@ -1222,6 +1222,12 @@ class TfaelOmniHandler(BaseHTTPRequestHandler):
         
         # ──────── Pilar 7: Cognitive Domain / BotRadar ────────
 
+        if path == "/api/v2/cognitive/twitter-cookie-test":
+            if not sess:
+                self._send_json({"ok": False, "error": "Sesi tidak valid."}, status=401); return
+            self._send_json(engine_cognitive.test_twitter_cookie())
+            return
+
         if path == "/api/v2/cognitive/scrape":
             if not sess:
                 self._send_json({"ok": False, "error": "Sesi tidak valid."}, status=401); return

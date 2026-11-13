@@ -377,6 +377,9 @@ export function cogFullPipeline(data: { platform: string; query?: string; channe
 export function cogSeedDemo(data: { force?: boolean } = {}) {
   return apiPost<ApiResponse & { seeded: boolean; accounts?: number; posts?: number; job_id?: string }>('/api/v2/cognitive/seed-demo', data).then(r => r.data);
 }
+export function cogTwitterCookieTest() {
+  return apiPost<ApiResponse & { status: string; detail: string }>('/api/v2/cognitive/twitter-cookie-test', {}).then(r => r.data);
+}
 export function cogDashboard(data: { job_id?: string } = {}) {
   return apiPost<CogDashboard>('/api/v2/cognitive/dashboard', data).then(r => r.data);
 }

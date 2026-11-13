@@ -4,7 +4,7 @@
 // ═══════════════════════════════════════════════════════════════════════
 
 import { useState } from 'react';
-import { cogScrape, cogFullPipeline, cogSeedDemo } from '@/api/endpoints';
+import { cogScrape, cogFullPipeline, cogSeedDemo, cogTwitterCookieTest } from '@/api/endpoints';
 import { Icon } from '@/components/icons/Icon';
 import { cn } from '@/lib/utils';
 
@@ -21,6 +21,8 @@ export function ScrapePanel({ onJobComplete }: Props) {
   const [mode, setMode] = useState<'scrape' | 'full'>('full');
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState('');
+  const [cookieTest, setCookieTest] = useState<{ status: string; detail: string; ok: boolean } | null>(null);
+  const [testingCookie, setTestingCookie] = useState(false);
 
   const handleRun = async () => {
     setRunning(true);
@@ -132,6 +134,55 @@ export function ScrapePanel({ onJobComplete }: Props) {
                   value={query}
                   onChange={e => setQuery(e.target.value)}
                 />
+
+                {/* Cookie self-test */}
+                <div className="flex items-center gap-2 pt-1">
+                  <button
+                    className={cn(
+                      'flex items-center gap-1.5 px-2 py-1 rounded-sm font-mono text-[10px] border transition-colors',
+                      testingCookie
+                        ? 'bg-background-deep text-foreground-muted cursor-not-allowed border-border-dim'
+                        : 'bg-background-deep border-border-dim text-foreground-muted hover:bg-background-panel'
+                    )}
+                    disabled={testingCookie}
+                    onClick={async () => {
+                      setTestingCookie(true);
+                      setCookieTest(null);
+                      try {
+                        const res = await cogTwitterCookieTest();
+                        setCookieTest({ status: res.status, detail: res.detail, ok: !!res.ok });
+                      } catch (e: any) {
+                        setCookieTest({ status: 'ERROR', detail: e.message || 'Network error.', ok: false });
+                      }
+                      setTestingCookie(false);
+                    }}
+                  >
+                    {testingCookie ? (
+                      <div className="w-3 h-3 border border-foreground-muted/30 border-t-foreground-muted rounded-full animate-spin" />
+                    ) : (
+                      <Icon name="shield" size={11} />
+                    )}
+                    Test Cookie Twitter
+                  </button>
+                  {cookieTest && (
+                    <span className={cn(
+                      'px-1.5 py-0.5 rounded text-[10px] font-mono font-bold border',
+                      cookieTest.ok
+                        ? 'bg-green-900/30 text-green-400 border-green-700/40'
+                        : 'bg-red-900/30 text-red-400 border-red-700/40'
+                    )}>
+                      {cookieTest.status}
+                    </span>
+                  )}
+                </div>
+                {cookieTest && (
+                  <div className={cn(
+                    'text-[10px] font-mono leading-snug',
+                    cookieTest.ok ? 'text-green-400/80' : 'text-foreground-muted'
+                  )}>
+                    {cookieTest.detail}
+                  </div>
+                )}
               </div>
             ) : (
               <div className="space-y-1">
